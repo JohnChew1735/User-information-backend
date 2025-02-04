@@ -1,14 +1,8 @@
 CREATE TABLE userdata (
     username VARCHAR (255),
-    age integer
+    age integer, 
+    country_id integer REFERENCES countrydata (country_id)
     );
-
-
-INSERT INTO userdata(username, age)
-VALUES ("Sophie", 13);
-
-INSERT INTO countrydata(country_name)
-VALUES ("Sophie");
 
 CREATE TABLE countrydata(
     country_name VARCHAR(255) UNIQUE,
@@ -16,6 +10,12 @@ CREATE TABLE countrydata(
 );
 
 
+
+INSERT INTO userdata(username, age)
+VALUES ("Sophie", 13);
+
+INSERT INTO countrydata(country_name)
+VALUES ("Sophie");
 
 ALTER TABLE userdata
 ADD country_id integer;
@@ -33,7 +33,7 @@ ALTER TABLE countrydata
 ADD PRIMARY KEY (country_id);
 
 ALTER TABLE userdata
-DROP COLUMN country_id;
+DROP COLUMN id;
 
 ALTER TABLE countrydata
 DROP COLUMN country_id;
@@ -72,3 +72,49 @@ WHERE country_name LIKE "BANGLA";
 
 ALTER TABLE countrydata
 ADD UNIQUE (country_name); 
+
+ALTER TABLE userdata
+DROP FOREIGN KEY country_id;
+
+DROP TABLE userdata;
+
+DROP TABLE countrydata;
+
+CREATE TABLE userdata (
+    username VARCHAR (255),
+    age integer, 
+    country_id integer REFERENCES countrydata (country_id)
+    );
+
+CREATE TABLE countrydata(
+    country_name VARCHAR(255) UNIQUE,
+    country_id integer PRIMARY KEY AUTO_INCREMENT
+);
+
+
+INSERT INTO userdata(username, age, country_id)
+VALUES ("test", 1, 1)
+
+ALTER TABLE countrydata
+
+
+INSERT INTO countrydata(country_name)
+VALUES ("South Korea");
+
+
+SELECT u.username, u.age, c.country_name
+FROM userdata u
+INNER JOIN countrydata c 
+ON u.country_id = c.country_id;
+
+SELECT username
+FROM userdata
+WHERE id = 10
+
+
+ALTER TABLE userdata ADD COLUMN id INT AUTO_INCREMENT PRIMARY KEY;
+
+DELETE FROM countrydata where country_id = 38;
+
+
+DELETE FROM userdata where country_id = 38;

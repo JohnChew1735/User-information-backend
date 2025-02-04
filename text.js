@@ -1,8 +1,11 @@
 import express from "express";
 import bodyParser from "body-parser";
 import mysql from "mysql2";
+import cors from "cors";
+import promise from "mysql2/promise";
 
 const app = express();
+app.use(cors());
 
 const database = mysql.createPool({
   host: "localhost",
@@ -12,6 +15,20 @@ const database = mysql.createPool({
 });
 
 app.use(bodyParser.json());
+app.get("/api/users", (req, res) => {
+  const sql = `
+    SELECT u.username, u.age, c.country_name,u.id
+    FROM userdata u
+    INNER JOIN countrydata c ON u.country_id = c.country_id
+  `;
+
+  database.query(sql, (err, results) => {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+    res.json(results); // Send data as Json
+  });
+});
 
 //this function checks the if the country name is already in the country data table
 //if yes, it will return the country id associated with it
@@ -51,7 +68,7 @@ async function input_countrydata(user) {
     if (checkcountrydata == 1) {
       console.log("checkcountrydata is 1");
 
-      const newCountryId = result + 1;
+      const newCountryId = result + 2;
 
       // Insert data into countrydata table
       await new Promise((resolve, reject) => {
@@ -97,22 +114,98 @@ async function input_countrydata(user) {
 }
 
 app.post("/", (req, res) => {
-  if (req.body["username"] == "") {
-    return res.status(400).send({ error: "Please provide a username" });
-  }
-  if (req.body["age"] <= 0) {
-    return res.status(400).send({ error: "Please provide an age" });
-  }
-  if (req.body["country_name"] == "") {
-    return res.status(400).send({ error: "Please provide a country" });
-  } else {
-    input_countrydata(req.body);
-    return res
-      .status(200)
-      .send({ message: "Your user information has been added." });
+  input_countrydata(req.body);
+
+  return res
+    .status(200)
+    .send({ message: "Your user information has been added." });
+});
+
+app.post("/addNewCountry", (req, res) => {
+  input_countrydata(req.body);
+
+  return res
+    .status(200)
+    .send({ message: "Your user information has been added." });
+});
+
+app.get("/api/countrydata", async (req, res) => {
+  const sql = "SELECT country_name FROM countrydata"; // Select only country_name
+
+  database.query(sql, (err, results) => {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+    const formattedResults = results.map(
+      (row, index) => `${index}. ${row.country_name}`
+    );
+
+    res.json(formattedResults);
+  });
+});
+
+app.delete("/api/users/:id", async (req, res) => {
+  const userId = req.params.id; // Extract user ID from request
+
+  try {
+    const result = await confirm_deletion(userId);
+    res.status(200).json(result);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
   }
 });
 
-app.listen(3000, () => {
-  console.log("App is listening at port 3000");
+async function confirm_deletion(userId) {
+  return new Promise((resolve, reject) => {
+    // Check if user exists before deleting
+    const checkQuery = "SELECT * FROM userdata WHERE id = ?";
+    database.query(checkQuery, [userId], (err, results) => {
+      if (err) return reject(err);
+
+      if (results.length === 0) {
+        return reject(new Error("User not found"));
+      }
+
+      // If user exists, proceed with deletion
+      const deleteQuery = "DELETE FROM userdata WHERE id = ?";
+      database.query(deleteQuery, [userId], (deleteErr, deleteResults) => {
+        if (deleteErr) return reject(deleteErr);
+        resolve({ message: "User successfully deleted" });
+      });
+    });
+  });
+}
+
+app.get("/api/checkcountry", async (req, res) => {
+  const countryName = req.query.name;
+
+  const sql = "SELECT * FROM countrydata WHERE country_name = ?";
+  database.query(sql, [countryName], (err, results) => {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+
+    if (results.length > 0) {
+      res.json({ exists: true });
+    } else {
+      res.json({ exists: false });
+    }
+  });
+});
+
+app.post("/api/addcountry", async (req, res) => {
+  const { country_name } = req.body;
+
+  const sql = "INSERT INTO countrydata (country_name) VALUES (?)";
+  database.query(sql, [country_name], (err, results) => {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+
+    res.status(200).json({ message: "Country added successfully" });
+  });
+});
+
+app.listen(8000, () => {
+  console.log("App is listening at port 8000");
 });
