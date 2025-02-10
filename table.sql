@@ -93,7 +93,7 @@ CREATE TABLE countrydata(
 
 
 INSERT INTO userdata(username, age, country_id)
-VALUES ("test", 1, 1)
+VALUES ("John", 20, 1)
 
 ALTER TABLE countrydata
 
@@ -114,7 +114,7 @@ WHERE id = 10
 
 ALTER TABLE userdata ADD COLUMN id INT AUTO_INCREMENT PRIMARY KEY;
 
-DELETE FROM countrydata where country_id = 38;
+DELETE FROM countrydata where country_id > 38;
 
 
-DELETE FROM userdata where country_id = 38;
+DELETE FROM userdata where country_id > 38;
